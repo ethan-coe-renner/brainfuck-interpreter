@@ -1,24 +1,22 @@
-use std::env;
-use std::error::Error;
-use std::fmt;
-use std::fs::File;
-use std::io::Read;
+use std::{env, error::Error, fmt, fs::File, io::Read};
 
-const MEMSIZE: usize = 30000;
+const MEMSIZE: usize = 30000; // brainfuck spec defines a 30000 byte memory
 
 struct State {
     instructions: Instructions,
     memory: [u8; MEMSIZE],
-    pointer: usize,
+    mem_pointer: usize,
 }
 
+// An error type to represent errors encountered during interpretation
 #[derive(Debug)]
 enum InterpreterError {
-    UnmatchedBeginLoop(Vec<usize>),
-    UnmatchedEndLoop(usize),
-    NoInput,
+    UnmatchedBeginLoop(Vec<usize>), // At least one unmatched [
+    UnmatchedEndLoop(usize),        // At least one unmatched ]
+    NoInput,                        // stdio error
 }
 impl Error for InterpreterError {}
+
 impl fmt::Display for InterpreterError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -40,28 +38,29 @@ impl fmt::Display for InterpreterError {
 }
 
 impl State {
+    // Initialize state based on spec
     fn initialize(instructions: Instructions) -> Self {
         Self {
             instructions,
             memory: [0; MEMSIZE],
-            pointer: 0,
+            mem_pointer: 0,
         }
     }
 
+    // update state by interpreting current instruction
     fn update_state(&mut self) -> Result<(), InterpreterError> {
-        // println!("Updating state");
         match self.instructions.instructions[self.instructions.pointer] {
             Instruction::IncPoint => {
-                self.pointer += 1;
+                self.mem_pointer += 1;
             }
-            Instruction::DecPoint => self.pointer -= 1,
-            Instruction::IncValue => self.memory[self.pointer] += 1,
-            Instruction::DecValue => self.memory[self.pointer] -= 1,
+            Instruction::DecPoint => self.mem_pointer -= 1,
+            Instruction::IncValue => self.memory[self.mem_pointer] += 1,
+            Instruction::DecValue => self.memory[self.mem_pointer] -= 1,
             Instruction::LoopBegin => self.instructions.jump_stack.push(self.instructions.pointer),
             Instruction::LoopEnd => {
                 match self.instructions.jump_stack.pop() {
                     Some(pointer) => {
-                        if self.memory[self.pointer] != 0 {
+                        if self.memory[self.mem_pointer] != 0 {
                             self.instructions.pointer = pointer - 1; // subtract one because this fn adds one at end
                         }
                     }
@@ -78,22 +77,23 @@ impl State {
                     .next()
                     .and_then(|result| result.ok());
                 match input {
-                    Some(value) => self.memory[self.pointer] = value,
+                    Some(value) => self.memory[self.mem_pointer] = value,
                     None => return Err(InterpreterError::NoInput),
                 }
             }
             Instruction::PutChar => {
-                print!("{}", self.memory[self.pointer] as char)
+                print!("{}", self.memory[self.mem_pointer] as char)
             }
 
             Instruction::Comment => {
                 // do nothing on comments
             }
         }
-        self.instructions.pointer += 1;
+        self.instructions.pointer += 1; // increment instruction pointer
         Ok(())
     }
 
+    // Update state until EOF
     fn run_program(&mut self) -> Result<(), InterpreterError> {
         while self.instructions.pointer < self.instructions.instructions.len() {
             self.update_state()?;
@@ -108,6 +108,7 @@ impl State {
     }
 }
 
+// Enumeration defining Instructions in BF
 #[derive(Debug)]
 enum Instruction {
     IncPoint,
@@ -122,6 +123,7 @@ enum Instruction {
 }
 
 impl Instruction {
+    // map ASCII to BF instructions
     fn new(instruction: u8) -> Self {
         match instruction {
             62 => Self::IncPoint,
@@ -137,6 +139,8 @@ impl Instruction {
     }
 }
 
+// Instructions struct represents a set of instructions
+// includes a vector of instructions, a pointer to the current instruction, and a stack of jumps (for loops)
 struct Instructions {
     instructions: Vec<Instruction>,
     pointer: usize,
@@ -144,6 +148,7 @@ struct Instructions {
 }
 
 impl Instructions {
+    // Initializes instructions based on spec
     fn new(instructions: Vec<Instruction>) -> Self {
         Instructions {
             instructions,
@@ -158,11 +163,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     assert!(args.len() >= 1, "No file inputted");
 
     let mut state = State::initialize(get_instructions(&args[1])?);
-    // println!("Instructions: {:?}", state.instructions.instructions);
 
     match state.run_program() {
         Err(error) => {
-            println!("{error}")
+            println!("\n{error}")
         }
         Ok(()) => {
             println!("\nSuccessfully completed program")
@@ -172,6 +176,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// read instructions from file
 fn get_instructions(input_file: &str) -> Result<Instructions, Box<dyn Error>> {
     let mut input: Vec<u8> = Vec::new();
     File::open(input_file)?.read_to_end(&mut input)?;
