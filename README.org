@@ -1,6 +1,6 @@
 #+title: Branfuck Interpreter in Rust
 
-This repository contains my implementation of a brainfuck interpreter written in Rust. To run it, just clone the repository and run ~cargo run [input_file]~.
+This repository contains my implementation of a brainfuck interpreter written in Rust. To run it, just clone the repository and run ~cargo run [input_file]~ (Ensure that you have [[https://doc.rust-lang.org/stable/cargo/][cargo]] installed).
 
 Some example brainfuck programs are included in the ~examples~ directory.
 
