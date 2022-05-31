@@ -60,7 +60,7 @@ impl State {
     fn update_state(&mut self) -> Result<(), InterpreterError> {
         match self.instructions.instructions[self.instructions.pointer] {
             Instruction::IncPoint => {
-                if self.mem_pointer < MEMSIZE {
+                if self.mem_pointer < MEMSIZE - 1 {
                     self.mem_pointer += 1;
                 } else {
                     return Err(InterpreterError::MemPointerAboveBounds);
