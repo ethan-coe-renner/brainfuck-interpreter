@@ -16,10 +16,11 @@ enum InterpreterError {
     UnmatchedEndLoop(usize),        // At least one unmatched ]
     MemPointerBelowBounds,          // mem_pointer below 0
     MemPointerAboveBounds,          // mem_pointer above MEMSIZE
-    ValueUnderflow(usize),
-    ValueOverflow(usize),
-    NoInput, // stdio error
+    ValueUnderflow(usize),          // value in memory decremented below 0
+    ValueOverflow(usize),           // value in memory incremented above maximum
+    NoInput,                        // stdio error
 }
+
 impl Error for InterpreterError {}
 
 impl fmt::Display for InterpreterError {
