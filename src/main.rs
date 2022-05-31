@@ -2,6 +2,7 @@ use std::{env, error::Error, fmt, fs::File, io::Read};
 
 const MEMSIZE: usize = 30000; // brainfuck spec defines a 30000 byte memory
 
+// struct representing current state machine, including memory, memory pointer, and instructions
 struct State {
     instructions: Instructions,
     memory: [u8; MEMSIZE],
