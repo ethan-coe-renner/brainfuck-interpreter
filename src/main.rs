@@ -16,7 +16,9 @@ enum InterpreterError {
     UnmatchedEndLoop(usize),        // At least one unmatched ]
     MemPointerBelowBounds,          // mem_pointer below 0
     MemPointerAboveBounds,          // mem_pointer above MEMSIZE
-    NoInput,                        // stdio error
+    ValueUnderflow(usize),
+    ValueOverflow(usize),
+    NoInput, // stdio error
 }
 impl Error for InterpreterError {}
 
@@ -38,6 +40,12 @@ impl fmt::Display for InterpreterError {
             }
             Self::MemPointerBelowBounds => {
                 write!(f, "Memory pointer decremented below 0")
+            }
+            Self::ValueOverflow(index) => {
+                write!(f, "Value overflow at memory address {index}")
+            }
+            Self::ValueUnderflow(index) => {
+                write!(f, "Value underflow at memory address {index}")
             }
             Self::NoInput => {
                 write!(f, "No input given")
@@ -73,8 +81,20 @@ impl State {
                     return Err(InterpreterError::MemPointerBelowBounds);
                 }
             }
-            Instruction::IncValue => self.memory[self.mem_pointer] += 1,
-            Instruction::DecValue => self.memory[self.mem_pointer] -= 1,
+            Instruction::IncValue => {
+                if self.memory[self.mem_pointer] < u8::MAX - 1 {
+                    self.memory[self.mem_pointer] += 1
+                } else {
+                    return Err(InterpreterError::ValueOverflow(self.mem_pointer));
+                }
+            }
+            Instruction::DecValue => {
+                if self.memory[self.mem_pointer] > 0 {
+                    self.memory[self.mem_pointer] -= 1
+                } else {
+                    return Err(InterpreterError::ValueUnderflow(self.mem_pointer));
+                }
+            }
             Instruction::LoopBegin => self.instructions.jump_stack.push(self.instructions.pointer),
             Instruction::LoopEnd => {
                 match self.instructions.jump_stack.pop() {
