@@ -14,6 +14,8 @@ struct State {
 enum InterpreterError {
     UnmatchedBeginLoop(Vec<usize>), // At least one unmatched [
     UnmatchedEndLoop(usize),        // At least one unmatched ]
+    MemPointerBelowBounds,          // mem_pointer below 0
+    MemPointerAboveBounds,          // mem_pointer above MEMSIZE
     NoInput,                        // stdio error
 }
 impl Error for InterpreterError {}
@@ -30,6 +32,12 @@ impl fmt::Display for InterpreterError {
             }
             Self::UnmatchedEndLoop(location) => {
                 write!(f, "Unmatched ']' at character {location}")
+            }
+            Self::MemPointerAboveBounds => {
+                write!(f, "Memory pointer incremented above MEMSIZE={MEMSIZE}")
+            }
+            Self::MemPointerBelowBounds => {
+                write!(f, "Memory pointer decremented below 0")
             }
             Self::NoInput => {
                 write!(f, "No input given")
@@ -52,9 +60,19 @@ impl State {
     fn update_state(&mut self) -> Result<(), InterpreterError> {
         match self.instructions.instructions[self.instructions.pointer] {
             Instruction::IncPoint => {
-                self.mem_pointer += 1;
+                if self.mem_pointer < MEMSIZE {
+                    self.mem_pointer += 1;
+                } else {
+                    return Err(InterpreterError::MemPointerAboveBounds);
+                }
             }
-            Instruction::DecPoint => self.mem_pointer -= 1,
+            Instruction::DecPoint => {
+                if self.mem_pointer > 0 {
+                    self.mem_pointer -= 1;
+                } else {
+                    return Err(InterpreterError::MemPointerBelowBounds);
+                }
+            }
             Instruction::IncValue => self.memory[self.mem_pointer] += 1,
             Instruction::DecValue => self.memory[self.mem_pointer] -= 1,
             Instruction::LoopBegin => self.instructions.jump_stack.push(self.instructions.pointer),
@@ -167,7 +185,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match state.run_program() {
         Err(error) => {
-            println!("\n{error}")
+            println!("\nInterpreter Error: {error}")
         }
         Ok(()) => {
             println!("\nSuccessfully completed program")
