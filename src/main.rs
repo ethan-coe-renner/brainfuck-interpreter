@@ -2,13 +2,6 @@ use std::{env, error::Error, fmt, fs::File, io::Read};
 
 const MEMSIZE: usize = 30000; // brainfuck spec defines a 30000 byte memory
 
-// struct representing current state machine, including memory, memory pointer, and instructions
-struct State {
-    instructions: Instructions,
-    memory: [u8; MEMSIZE],
-    mem_pointer: usize,
-}
-
 // An error type to represent errors encountered during interpretation
 #[derive(Debug)]
 enum InterpreterError {
@@ -16,8 +9,6 @@ enum InterpreterError {
     UnmatchedEndLoop(usize),        // At least one unmatched ]
     MemPointerBelowBounds,          // mem_pointer below 0
     MemPointerAboveBounds,          // mem_pointer above MEMSIZE
-    ValueUnderflow(usize),          // value in memory decremented below 0
-    ValueOverflow(usize),           // value in memory incremented above maximum
     NoInput,                        // stdio error
 }
 
@@ -42,17 +33,18 @@ impl fmt::Display for InterpreterError {
             Self::MemPointerBelowBounds => {
                 write!(f, "Memory pointer decremented below 0")
             }
-            Self::ValueOverflow(index) => {
-                write!(f, "Value overflow at memory address {index}")
-            }
-            Self::ValueUnderflow(index) => {
-                write!(f, "Value underflow at memory address {index}")
-            }
             Self::NoInput => {
                 write!(f, "No input given")
             }
         }
     }
+}
+
+// struct representing current state machine, including memory, memory pointer, and instructions
+struct State {
+    instructions: Instructions,
+    memory: [u8; MEMSIZE],
+    mem_pointer: usize,
 }
 
 impl State {
@@ -83,18 +75,10 @@ impl State {
                 }
             }
             Instruction::IncValue => {
-                if self.memory[self.mem_pointer] < u8::MAX - 1 {
-                    self.memory[self.mem_pointer] += 1
-                } else {
-                    return Err(InterpreterError::ValueOverflow(self.mem_pointer));
-                }
+                self.memory[self.mem_pointer] = self.memory[self.mem_pointer].wrapping_add(1)
             }
             Instruction::DecValue => {
-                if self.memory[self.mem_pointer] > 0 {
-                    self.memory[self.mem_pointer] -= 1
-                } else {
-                    return Err(InterpreterError::ValueUnderflow(self.mem_pointer));
-                }
+                self.memory[self.mem_pointer] = self.memory[self.mem_pointer].wrapping_sub(1)
             }
             Instruction::LoopBegin => self.instructions.jump_stack.push(self.instructions.pointer),
             Instruction::LoopEnd => {
@@ -200,7 +184,7 @@ impl Instructions {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
-    assert!(args.len() >= 1, "No file inputted");
+    assert!(args.len() > 1, "No file inputted");
 
     let mut state = State::initialize(get_instructions(&args[1])?);
 
