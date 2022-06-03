@@ -1,43 +1,21 @@
-use std::{env, error::Error, fmt, fs::File, io::Read};
+use std::{env, error::Error, fs::File, io::Read};
+use thiserror::Error;
 
 const MEMSIZE: usize = 30000; // brainfuck spec defines a 30000 byte memory
 
 // An error type to represent errors encountered during interpretation
-#[derive(Debug)]
+#[derive(Error, Debug)]
 enum InterpreterError {
-    UnmatchedBeginLoop(Vec<usize>), // At least one unmatched [
-    UnmatchedEndLoop(usize),        // At least one unmatched ]
-    MemPointerBelowBounds,          // mem_pointer below 0
-    MemPointerAboveBounds,          // mem_pointer above MEMSIZE
-    NoInput,                        // stdio error
-}
-
-impl Error for InterpreterError {}
-
-impl fmt::Display for InterpreterError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::UnmatchedBeginLoop(locations) => {
-                write!(
-                    f,
-                    "The '['s at these indices are unmatched: {:?}",
-                    locations
-                )
-            }
-            Self::UnmatchedEndLoop(location) => {
-                write!(f, "Unmatched ']' at character {location}")
-            }
-            Self::MemPointerAboveBounds => {
-                write!(f, "Memory pointer incremented above MEMSIZE={MEMSIZE}")
-            }
-            Self::MemPointerBelowBounds => {
-                write!(f, "Memory pointer decremented below 0")
-            }
-            Self::NoInput => {
-                write!(f, "No input given")
-            }
-        }
-    }
+    #[error("Unmatched ']'")]
+    UnmatchedBeginLoop(Vec<usize>),
+    #[error("Unmatched ']'")]
+    UnmatchedEndLoop(usize),
+    #[error("Memory pointer incremented above MEMSIZE={MEMSIZE}")]
+    MemPointerBelowBounds,
+    #[error("Memory pointer decremented below 0")]
+    MemPointerAboveBounds,
+    #[error("No input given")]
+    NoInput,
 }
 
 // struct representing current state machine, including memory, memory pointer, and instructions
