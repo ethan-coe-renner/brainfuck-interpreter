@@ -1,10 +1,10 @@
-#+title: Branfuck Interpreter in Rust
+# Branfuck Interpreter in Rust
 
-This repository contains my implementation of a brainfuck interpreter written in Rust. To run it, just clone the repository and run ~cargo run [input_file]~ (Ensure that you have [[https://doc.rust-lang.org/stable/cargo/][cargo]] installed).
+This repository contains an implementation of a [brainfuck](https://en.wikipedia.org/wiki/Brainfuck) interpreter written in Rust.
 
-Some example brainfuck programs are included in the ~examples~ directory.
+Some example brainfuck programs are included in the `examples` directory.
 
-* Brainfuck Instruction Set
+## Brainfuck Instruction Set
 
 | ~>~ | Increment the data pointer (to point to the next cell to the right).                                                                                                              |
 | ~<~ | Decrement the data pointer (to point to the next cell to the left).                                                                                                               |
@@ -14,4 +14,5 @@ Some example brainfuck programs are included in the ~examples~ directory.
 | , | Accept one byte of input, storing its value in the byte at the data pointer.                                                                                                      |
 | ~[~ | If the byte at the data pointer is zero, then instead of moving the instruction pointer forward to the next command, jump it forward to the command after the matching ] command. |
 | ~]~ | If the byte at the data pointer is nonzero, then instead of moving the instruction pointer forward to the next command, jump it back to the command after the matching [ command. |
-The above was taken from [[https://en.wikipedia.org/wiki/Brainfuck][wikipedia]].
+
+The above was taken from [wikipedia](https://en.wikipedia.org/wiki/Brainfuck).
